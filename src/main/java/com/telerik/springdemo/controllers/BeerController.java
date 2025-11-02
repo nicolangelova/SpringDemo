@@ -1,6 +1,9 @@
 package com.telerik.springdemo.controllers;
 
+import com.telerik.springdemo.exceptions.DuplicateEntityException;
+import com.telerik.springdemo.exceptions.EntityNotFoundException;
 import com.telerik.springdemo.models.Beer;
+import com.telerik.springdemo.services.BeerServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -13,61 +16,58 @@ import java.util.List;
 @RequestMapping("/api/beers")
 public class BeerController {
 
-    private final List<Beer> beers;
+    private BeerServiceImpl service;
 
     public BeerController() {
-        beers = new ArrayList<>();
 
-        beers.add(new Beer(1,"Glarus English Ale", 4.6));
-        beers.add(new Beer(2,"Rhombus Porter", 5));
+        this.service = new BeerServiceImpl();
     }
 
     @GetMapping
     public List<Beer> getAll() {
-        return beers;
+        return service.getAll();
     }
 
     @GetMapping("/{id}")
     public Beer getById(@PathVariable int id) {
-        return beers.stream()
-                .filter(beer-> beer.getId()==id)
-                .findFirst()
-                .orElseThrow(()-> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        String.format("Beer with id %d not found", id)
-                ));
+        try {
+            return service.getById(id);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,String.format("Beer with id %d not found", id));
+        }
     }
 
     @PostMapping
     public Beer create(@Valid @RequestBody Beer beer){
-        beers.add(beer);
+        try {
+            service.create(beer);
+        } catch (DuplicateEntityException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
         return beer;
     }
 
     @PutMapping("/{id}")
     public Beer update(@PathVariable int id, @Valid @RequestBody Beer beer) {
-        Beer beerToUpdate = getByIdHelper(id);
-
-        beerToUpdate.setName(beer.getName());
-        beerToUpdate.setAbv(beer.getAbv());
-
-        return beerToUpdate;
+        try {
+            service.update(beer);
+        }catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }catch (DuplicateEntityException e){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+        return beer;
     }
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable int id) {
-        Beer beerToDelete = getByIdHelper(id);
-        beers.remove(beerToDelete);
+        try {
+            service.delete(id);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
     }
 
-    private Beer getByIdHelper(int id){
-        return beers.stream()
-                .filter(beer-> beer.getId()==id)
-                .findFirst()
-                .orElseThrow(()->new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        String.format("Beer with id %d not found", id)));
-    }
 
 
 
