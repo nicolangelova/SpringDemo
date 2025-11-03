@@ -3,24 +3,26 @@ package com.telerik.springdemo.controllers;
 import com.telerik.springdemo.exceptions.DuplicateEntityException;
 import com.telerik.springdemo.exceptions.EntityNotFoundException;
 import com.telerik.springdemo.models.Beer;
-import com.telerik.springdemo.services.BeerServiceImpl;
+import com.telerik.springdemo.services.BeerService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/beers")
 public class BeerController {
 
-    private BeerServiceImpl service;
+    private BeerService service;
 
-    public BeerController() {
-
-        this.service = new BeerServiceImpl();
+    @Autowired
+    public BeerController(BeerService service) {
+        this.service = service;
     }
 
     @GetMapping
